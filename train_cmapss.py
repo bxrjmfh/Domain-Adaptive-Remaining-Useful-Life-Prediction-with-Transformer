@@ -1,16 +1,16 @@
-import torch.nn as nn
+from dataset import TRANSFORMER_ALL_DATA, TRANSFORMERDATA
+from loss import advLoss
 from model import *
-import torch
-import numpy as np
+from torch.utils.data import DataLoader, random_split
+import argparse
+import itertools
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 import random
-import argparse
-from dataset import TRANSFORMER_ALL_DATA, TRANSFORMERDATA
-from torch.utils.data import DataLoader, random_split
-from loss import advLoss
-import itertools
 import time
+import torch
+import torch.nn as nn
 
 
 def validate():
@@ -180,6 +180,7 @@ if __name__ == "__main__":
     Loss = nn.MSELoss()
     net, Loss, D1, D2 = net.cuda(), Loss.cuda(), D1.cuda(), D2.cuda()
     sch = torch.optim.lr_scheduler.StepLR(opt, 80, 0.5)
+    # 动态调整学习率
 
     source_list = np.loadtxt("save/"+source+"/train"+source+".txt", dtype=str).tolist()
     target_list = np.loadtxt("save/"+target+"/train"+target+".txt", dtype=str).tolist()
