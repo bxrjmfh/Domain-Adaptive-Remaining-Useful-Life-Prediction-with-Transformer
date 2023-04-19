@@ -12,7 +12,7 @@ from mindspore.ops import operations as P
 class PositionalEncoding(nn.Cell):
 
     def __init__(self,d_model, dropout=0.1, max_len=500) -> None:
-        super().__init__()
+        super(PositionalEncoding,self).__init__()
         self.dropout = nn.Dropout(keep_prob=1-dropout)
         # https://www.mindspore.cn/docs/zh-CN/r2.0.0-alpha/note/api_mapping/pytorch_diff/mindspore.nn.Dropout.html?highlight=Dropout
         position = np.arange(max_len).reshape(max_len,1)
@@ -35,7 +35,7 @@ class PositionalEncoding(nn.Cell):
 
 class Discriminator(nn.Cell): #D_y
     def __init__(self, auto_prefix=True, flags=None, in_features=24):
-        super().__init__(auto_prefix, flags)
+        super(Discriminator,self).__init__(auto_prefix, flags)
         self.in_features = in_features
         self.li = nn.SequentialCell(
             nn.Dense(in_features,512),
@@ -64,7 +64,7 @@ class Discriminator(nn.Cell): #D_y
 
 class backboneDiscriminator(nn.Cell): #D_f
     def __init__(self, seq_len, d=24):
-        super().__init__()
+        super(backboneDiscriminator,self).__init__()
         self.seq_len = seq_len 
         self.li1 = nn.Dense(seq_len, 512)
         self.li2 = nn.SequentialCell(
@@ -89,12 +89,12 @@ class backboneDiscriminator(nn.Cell): #D_f
 
 class mymodel(nn.Cell):
 
-    def __init__(self, d_model = 24, dropout=0.1, nhead=8, nlayers=2, max_len=500):
-        super().__init__()
+    def __init__(self, d_model = 24, dropout=0.1, nhead=8, nlayers=2, max_len=500, batch_size=1):
+        super(mymodel,self).__init__()
         self.max_len = max_len
-        self.pos_encoder = PositionalEncoding(batch_size=None, d_model, dropout=dropout, max_len=max_len)
-        transformer_encoder_layer = nn.TransformerEncoderLayer()
-        self.transformer_encoder = trans.TransformerEncoder(batch_size = None, num_layers=nlayers,d_model=d_model,num_heads=nhead,ffn_hidden_size=512,dropout=0.1,post_layernorm_residual=True)
+        self.pos_encoder = PositionalEncoding( d_model=d_model, dropout=dropout, max_len=max_len)
+        # transformer_encoder_layer = nn.TransformerEncoderLayer()
+        self.transformer_encoder = nn.TransformerEncoder(seq_length=max_len,batch_size=batch_size,hidden_size=d_model,num_heads=nhead,ffn_hidden_size=512,post_layernorm_residual=True,num_layers=nlayers)
         self.d_model = d_model
         self.dropout = nn.Dropout(1-dropout)
         self.decoder = nn.Dense(d_model, 1 ,weight_init = initializer.Uniform(scale=0.1) )

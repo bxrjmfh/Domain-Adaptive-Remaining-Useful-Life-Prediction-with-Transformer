@@ -12,6 +12,7 @@ import time
 import torch
 import torch.nn as nn
 
+# def my own train
 
 def validate():
     net.eval()
