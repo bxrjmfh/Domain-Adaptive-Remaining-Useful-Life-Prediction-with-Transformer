@@ -28,7 +28,8 @@ class PositionalEncoding(nn.Cell):
             x: Tensor, shape [batch_size, seq_len, feature_num]
         """
         # pe with shape: 
-        x = ops.add(x, self.pe[:x.shape[1]].unsqueeze(0))
+        x = ops.add(x, self.pe[:x.shape[0]].unsqueeze(0))
+        # x is single data
         # 所有的操作都必须ops来搞
         return self.dropout(x)
     
@@ -66,7 +67,8 @@ class backboneDiscriminator(nn.Cell): #D_f
     def __init__(self, seq_len, d=24):
         super(backboneDiscriminator,self).__init__()
         self.seq_len = seq_len 
-        self.li1 = nn.Dense(seq_len, 512)
+        
+        self.li1 = nn.Dense(d, 1)
         self.li2 = nn.SequentialCell(
             nn.Dense(seq_len,512),
             nn.BatchNorm1d(512),
@@ -94,7 +96,7 @@ class mymodel(nn.Cell):
         self.max_len = max_len
         self.pos_encoder = PositionalEncoding( d_model=d_model, dropout=dropout, max_len=max_len)
         # transformer_encoder_layer = nn.TransformerEncoderLayer()
-        self.transformer_encoder = nn.TransformerEncoder(seq_length=max_len,batch_size=batch_size,hidden_size=d_model,num_heads=nhead,ffn_hidden_size=512,post_layernorm_residual=True,num_layers=nlayers)
+        self.transformer_encoder = nn.TransformerEncoder(seq_length=max_len,batch_size=batch_size,hidden_size=d_model,num_heads=nhead,ffn_hidden_size=512,post_layernorm_residual=True,num_layers=nlayers )
         self.d_model = d_model
         self.dropout = nn.Dropout(1-dropout)
         self.decoder = nn.Dense(d_model, 1 ,weight_init = initializer.Uniform(scale=0.1) )
@@ -102,6 +104,9 @@ class mymodel(nn.Cell):
         
     def construct(self, src, key_msk, attn_msk=None):
         src = self.pos_encoder(src)
-        output1 = self.transformer_encoder(src, attn_msk, key_msk)
-        output2 = self.decoder(output1)
+        # output1 = self.transformer_encoder(src, attn_msk, key_msk)
+        # problem？
+        output1 = self.transformer_encoder(src, attn_msk)
+        # return the multiple result..
+        output2 = self.decoder(output1[0])
         return output1, output2
