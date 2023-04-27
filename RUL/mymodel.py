@@ -1,7 +1,7 @@
 import math
 
 import mindspore.nn as nn
-import mindspore.nn.transformer as trans
+import mindspore.nn.Transformer as trans
 from mindspore import Tensor
 from mindspore import numpy as np
 from mindspore import ops as ops
