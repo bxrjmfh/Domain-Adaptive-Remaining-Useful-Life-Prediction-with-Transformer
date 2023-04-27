@@ -219,6 +219,8 @@ opt = nn.SGD(net.trainable_params()+D1.trainable_params()+D2.trainable_params()
              ,learning_rate=0.02)
 model = Model(network=loss_net, optimizer=opt)
 # FORMAT two dataset into one.
+
+# In[ ]:
 model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor()])
 
 
