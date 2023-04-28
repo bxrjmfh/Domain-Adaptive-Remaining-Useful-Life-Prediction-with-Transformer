@@ -41,7 +41,7 @@ class TRANSFORMER_ALL_DATA_MINDS():
             self.padding += [ops.zeros(seq_len,mstype.float32) for i in range(seq_len-1, l)]
             self.padding += [ops.concat([ops.zeros(seq_len-i-1,mstype.float32), ops.ones(i+1,type=mstype.float32)],0) for i in range(seq_len-1)]
             # todo:debug
-            if len(self.data) > 3000:
+            if len(self.data) > 300:
                 break
 
     def __len__(self):
