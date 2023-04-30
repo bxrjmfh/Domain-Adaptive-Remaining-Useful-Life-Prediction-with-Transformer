@@ -25,7 +25,8 @@ from mindspore import dataset as ds
 from mindspore.nn import LossBase
 from mindspore.common.initializer import Normal
 from mindspore.train.callback import LossMonitor
-
+from mindspore import set_context
+set_context(device_target='GPU', device_id=0)
 
 # In[ ]:
 
@@ -208,6 +209,7 @@ class MultipleLoss(LossBase):
         loss1 = self.mseLoss(s_r, s_lb)
         loss2 = self.feaLoss(s_bkb, t_bkb)
         loss3 = self.outLoss(s_out, t_out)
+        # TODO:check loss format ...
         return loss1 + self.a*loss2 + self.b*loss3
 
 loss_func = MultipleLoss()

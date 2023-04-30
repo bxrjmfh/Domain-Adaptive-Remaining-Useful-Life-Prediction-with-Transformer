@@ -11,6 +11,7 @@ import random
 import time
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 
 # def my own train
 
@@ -50,7 +51,7 @@ def validate():
 
 def train():
     minn = 999
-    for e in range(epochs):
+    for e in tqdm(range(epochs)):
         al, tot = 0, 0
         net.train()
         random.shuffle(source_list)
