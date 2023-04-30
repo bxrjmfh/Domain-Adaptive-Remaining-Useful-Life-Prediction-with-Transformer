@@ -149,7 +149,7 @@ target= 'FD002'
 source = 'FD003'
 epoches = 240
 os.chdir('/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/')
-batch_size = 1000
+batch_size = 100
 a = 0.1
 b = 0.5
 source_list = numpy.loadtxt("save/"+source+"/train"+source+".txt", dtype=str).tolist()
@@ -176,7 +176,7 @@ class MERGED_DATA():
         self.t_data = t_data
     
     def __len__(self):
-        return min(len(self.s_data),len(self.s_data))
+        return min(len(self.s_data),len(self.t_data))
     
     def __getitem__(self,index):
         return self.s_data[index]+(self.t_data[index][0],self.t_data[index][2])
@@ -187,14 +187,24 @@ class MERGED_DATA():
 
 
 sampler = ds.RandomSampler()
-all_data = MERGED_DATA(s_data,t_data)
+# all_data = MERGED_DATA(s_data,t_data)
 # t_dataset = ds.GeneratorDataset(t_data,sampler=sampler,
 #                                 column_names=['t_input', 't_nouse', 't_msk'])
 # s_dataset = ds.GeneratorDataset(s_data,sampler=sampler,
 #                                 column_names=['s_input', 's_lb', 's_msk'])
 
-dataset = ds.GeneratorDataset(all_data,sampler=sampler,column_names=['s_input', 's_lb', 's_msk','t_input', 't_msk'])
-dataset.batch(batch_size=128)
+dataset = ds.GeneratorDataset(MERGED_DATA(s_data,t_data),sampler=sampler,column_names=['s_input', 's_lb', 's_msk','t_input', 't_msk'])
+dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
+# In[]
+
+# In[]
+
+# In[]
+
+# In[]
+
+# In[]
+
 class MultipleLoss(LossBase):
     def __init__(self, reduction='mean'):
         super(MultipleLoss, self).__init__(reduction)
@@ -213,7 +223,7 @@ class MultipleLoss(LossBase):
         return loss1 + self.a*loss2 + self.b*loss3
 
 loss_func = MultipleLoss()
-net = mymodel(max_len=seq_len,batch_size=1000)
+net = mymodel(max_len=seq_len,batch_size=batch_size)
 D1 = Discriminator(in_features=seq_len)
 D2 = backboneDiscriminator(seq_len)
 loss_net = MywithLossCell(net,D1,D2,loss_func)
@@ -221,6 +231,8 @@ opt = nn.SGD(net.trainable_params()+D1.trainable_params()+D2.trainable_params()
              ,learning_rate=0.02)
 model = Model(network=loss_net, optimizer=opt)
 # FORMAT two dataset into one.
+
+# In[ ]:
 model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor()])
 
 
@@ -228,8 +240,9 @@ model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor()])
 
 # In[ ]:
 
+for e in dataset:
+    print(e[0].shape)
 
-s_data[0][0]
 
 
 # In[9]:
