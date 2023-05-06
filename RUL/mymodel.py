@@ -101,11 +101,13 @@ class mymodel(nn.Cell):
         self.dropout = nn.Dropout(1-dropout)
         self.decoder = nn.Dense(d_model, 1 ,weight_init = initializer.Uniform(scale=0.1) )
         # bias default is zeros
+        self.trans_mask_generator = trans.AttentionMask(seq_length=max_len)
         
-    def construct(self, src, key_msk, attn_msk=None):
+    def construct(self, src, attn_msk=None):
         src = self.pos_encoder(src)
         # output1 = self.transformer_encoder(src, attn_msk, key_msk)
         # problem？
+        attn_msk = self.trans_mask_generator(attn_msk)
         output1 = self.transformer_encoder(src, attn_msk)
         # return the multiple result..
         output2 = self.decoder(output1[0])

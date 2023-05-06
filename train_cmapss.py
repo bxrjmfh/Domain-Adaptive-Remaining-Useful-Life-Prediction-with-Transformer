@@ -67,8 +67,8 @@ def train():
             s_d, t_d = next(s_iter), next(t_iter)
             s_input, s_lb, s_msk = s_d[0], s_d[1], s_d[2]
             t_input, t_msk = t_d[0], t_d[2]
-            # s_input, s_lb, s_msk = s_input.cuda(), s_lb.cuda(), s_msk.cuda()
-            # t_input, t_msk = t_input.cuda(), t_msk.cuda()
+            s_input, s_lb, s_msk = s_input.cuda(), s_lb.cuda(), s_msk.cuda()
+            t_input, t_msk = t_input.cuda(), t_msk.cuda()
             s_features, s_out = net(s_input, s_msk)
             t_features, t_out = net(t_input, t_msk) # [bts, seq_len, feature_num]
             s_out.squeeze_(2)
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     elif args.type == 2:
         opt = torch.optim.SGD(itertools.chain(net.parameters(), D1.parameters(), D2.parameters()), lr=args.lr)
     Loss = nn.MSELoss()
-    # net, Loss, D1, D2 = net.cuda(), Loss.cuda(), D1.cuda(), D2.cuda()
+    net, Loss, D1, D2 = net.cuda(), Loss.cuda(), D1.cuda(), D2.cuda()
     sch = torch.optim.lr_scheduler.StepLR(opt, 80, 0.5)
     # 动态调整学习率
 

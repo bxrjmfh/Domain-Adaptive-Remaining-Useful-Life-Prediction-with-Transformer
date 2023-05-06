@@ -125,7 +125,7 @@ class MywithLossCell(nn.Cell):
         self.D2 = D2
         self.loss_fn = loss_fn
 
-    def construct(self,s_input, s_msk,s_lb, t_input, t_msk):
+    def construct(self,s_input, s_lb,s_msk, t_input, t_msk):
         s_features, s_out = self.net(s_input, s_msk)
         t_features, t_out = self.net(t_input, t_msk)
         s_out = s_out.squeeze(2)
@@ -179,7 +179,8 @@ class MERGED_DATA():
         return min(len(self.s_data),len(self.t_data))
     
     def __getitem__(self,index):
-        return self.s_data[index]+(self.t_data[index][0],self.t_data[index][2])
+        # return self.s_data[index]+(self.t_data[index][0],self.t_data[index][2])
+        return (self.s_data[index][0],self.s_data[index][1],self.s_data[index][2],self.t_data[index][0],self.t_data[index][2])
         # ['s_input', 's_lb', 's_msk','t_input', 't_msk']
 
 
@@ -197,8 +198,12 @@ dataset = ds.GeneratorDataset(MERGED_DATA(s_data,t_data),sampler=sampler,column_
 dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
 # In[]
 
+from mindspore.dataset import TupleIterator
+rtl = TupleIterator(dataset)
 # In[]
-
+# for it in rtl:
+#     for i in it:
+#         print(i.shape)
 # In[]
 
 # In[]
@@ -219,30 +224,42 @@ class MultipleLoss(LossBase):
         loss1 = self.mseLoss(s_r, s_lb)
         loss2 = self.feaLoss(s_bkb, t_bkb)
         loss3 = self.outLoss(s_out, t_out)
-        # TODO:check loss format ...
         return loss1 + self.a*loss2 + self.b*loss3
 
 loss_func = MultipleLoss()
+#In[]:
 net = mymodel(max_len=seq_len,batch_size=batch_size)
+# print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+
 D1 = Discriminator(in_features=seq_len)
 D2 = backboneDiscriminator(seq_len)
 loss_net = MywithLossCell(net,D1,D2,loss_func)
 opt = nn.SGD(net.trainable_params()+D1.trainable_params()+D2.trainable_params()
              ,learning_rate=0.02)
+print("before model")
+
 model = Model(network=loss_net, optimizer=opt)
 # FORMAT two dataset into one.
 
 # In[ ]:
+print("start training")
 model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor()])
 
 
 # 
 
 # In[ ]:
+import mindspore as ms
+a = ms.Tensor([1])
 
-for e in dataset:
-    print(e[0].shape)
+# input_shape = self.shape(input_mask)
+# shape_right = (input_shape[0], 1, input_shape[1])
+# shape_left = input_shape + (1,)
 
+# input_mask = self.cast(input_mask, ms.float32)
+# mask_left = self.reshape(input_mask, shape_left)
+# mask_right = self.reshape(input_mask, shape_right)
+# attention_mask = self.batch_matmul(mask_left, mask_right)
 
 
 # In[9]:
