@@ -25,8 +25,10 @@ from mindspore import dataset as ds
 from mindspore.nn import LossBase
 from mindspore.common.initializer import Normal
 from mindspore.train.callback import LossMonitor
-from mindspore import set_context
-set_context(device_target='GPU', device_id=0)
+from mindspore import set_context,context
+set_context(mode=context.GRAPH_MODE,device_target='GPU', device_id=0, save_graphs=True,
+            save_graphs_path="/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/RUL/ir_files",
+            save_graph_dot=True)
 
 # In[ ]:
 
@@ -243,6 +245,9 @@ model = Model(network=loss_net, optimizer=opt)
 
 # In[ ]:
 print("start training")
+import time
+time.sleep(3)
+
 model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor()])
 
 
