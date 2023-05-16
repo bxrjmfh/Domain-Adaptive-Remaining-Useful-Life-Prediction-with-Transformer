@@ -35,20 +35,20 @@ class PositionalEncoding(nn.Cell):
     
 class ReverseGrad(nn.Cell):
     def __init__(self,alpha, auto_prefix=True, flags=None):
-        super().__init__(auto_prefix, flags)
+        super(ReverseGrad,self).__init__(auto_prefix, flags)
         self.alpha = alpha
     
     def construct(self,x):
-        return 1.00000001*x
+        return 1.0001*x
     
     def bprop(self,x,out,dout):
-        return -self.alpha*x
+        return (-self.alpha*dout,)
     
 class Discriminator(nn.Cell): #D_y
     def __init__(self, auto_prefix=True, flags=None, in_features=24):
         super(Discriminator,self).__init__(auto_prefix, flags)
         self.in_features = in_features
-        self.rev = ReverseGrad(1)
+        self.rev = ReverseGrad(1.0)
             # reverse layer
         self.li = nn.SequentialCell(
             nn.Dense(in_features,512),
@@ -81,7 +81,7 @@ class backboneDiscriminator(nn.Cell): #D_f
     def __init__(self, seq_len, d=24):
         super(backboneDiscriminator,self).__init__()
         self.seq_len = seq_len 
-        self.rev = ReverseGrad(1)
+        self.rev = ReverseGrad(1.0)
             # reverse layer
         self.li1 = nn.Dense(d, 1)
         self.li2 = nn.SequentialCell(

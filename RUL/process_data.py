@@ -29,6 +29,7 @@ from mindspore import set_context,context
 set_context(mode=context.GRAPH_MODE,device_target='GPU', device_id=0, save_graphs=True,
             save_graphs_path="/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/RUL/ir_files",
             save_graph_dot=True)
+# set_context(mode=context.PYNATIVE_MODE,device_target="GPU")
 
 # In[ ]:
 
