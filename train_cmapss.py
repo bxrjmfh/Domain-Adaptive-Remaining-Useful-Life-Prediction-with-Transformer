@@ -21,15 +21,21 @@ def validate():
     with torch.no_grad():
         for i in target_test_names:
             pred_sum, pred_cnt = torch.zeros(800), torch.zeros(800)
+            # 记录结果 （800维？）
             valid_data = TRANSFORMERDATA(i, seq_len)
+            # 变换一项结果
             data_len = len(valid_data)
             valid_loader = DataLoader(valid_data, batch_size=1000)
+            # 参考train中dataloader进行改造
             valid_iter = iter(valid_loader)
             d = next(valid_iter)
+            # 迭代
             input, lbl, msk = d[0], d[1], d[2]
             input, msk = input.cuda(), msk.cuda()
             _, out = net(input, msk)
+            # 输出结果，out 就是decoder的输出
             out = out.squeeze(2).cpu()
+            # TODO:形状是啥？
             for j in range(data_len):
                 if j < seq_len-1:
                     pred_sum[:j+1] += out[j, -(j+1):]
@@ -187,8 +193,11 @@ if __name__ == "__main__":
     source_list = np.loadtxt("save/"+source+"/train"+source+".txt", dtype=str).tolist()
     target_list = np.loadtxt("save/"+target+"/train"+target+".txt", dtype=str).tolist()
     valid_list = np.loadtxt("save/"+target+"/test"+target+".txt", dtype=str).tolist()
+    # v_list with 47 files
     a_list = np.loadtxt("save/"+target+"/valid"+target+".txt", dtype=str).tolist()
+    # a_list with 31 item of validation set item
     target_test_names = valid_list + a_list
+    # 78 files in targetlist....
     minl = min(len(source_list), len(target_list))
     s_data = TRANSFORMER_ALL_DATA(source_list, seq_len)
     t_data = TRANSFORMER_ALL_DATA(target_list, seq_len)
