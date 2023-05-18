@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
 
 
 from mydataset import TRANSFORMER_DATA_MINDS,TRANSFORMER_ALL_DATA_MINDS
@@ -24,34 +23,13 @@ from mindspore import Model
 from mindspore import dataset as ds
 from mindspore.nn import LossBase
 from mindspore.common.initializer import Normal
-from mindspore.train.callback import LossMonitor
+from mindspore.train.callback import LossMonitor,SummaryCollector
 from mindspore import set_context,context
 from mindspore.train.callback import Callback
 from mindspore import Tensor
+from mindspore.dataset import TupleIterator
 
-set_context(mode=context.GRAPH_MODE,device_target='GPU', device_id=0, save_graphs=True,
-            save_graphs_path="/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/RUL/ir_files",
-            save_graph_dot=True)
 # set_context(mode=context.PYNATIVE_MODE,device_target="GPU")
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-seq_len = 70
-target= 'FD002'
-source = 'FD003'
-epoches = 240
-os.chdir('/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/')
-batch_size = 1000
-a = 0.1
-b = 0.5
-
 
 def prepareData(source_list,target_list,target_test_names):
     s_data = TRANSFORMER_ALL_DATA_MINDS(source_list, seq_len)
@@ -166,37 +144,6 @@ class CustomWithEvalCell(nn.Cell):
         return output, label1, label2
     
 
-# In[ ]:
-
-
-seq_len = 70
-target= 'FD002'
-source = 'FD003'
-epoches = 240
-os.chdir('/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/')
-batch_size = 100
-a = 0.1
-b = 0.5
-source_list = numpy.loadtxt("save/"+source+"/train"+source+".txt", dtype=str).tolist()
-target_list = numpy.loadtxt("save/"+target+"/train"+target+".txt", dtype=str).tolist()
-valid_list = numpy.loadtxt("save/"+target+"/test"+target+".txt", dtype=str).tolist()
-# len(v) = 47
-a_list = numpy.loadtxt("save/"+target+"/valid"+target+".txt", dtype=str).tolist()
-# len(a_list) 31
-target_test_names = valid_list + a_list
-# 78 files
-target_test_names = target_test_names[:10]
-minl = min(len(source_list), len(target_list))
-s_data,t_data,t_data_test = prepareData(source_list,target_list,target_test_names)
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
 
 class MERGED_DATA():
     def __init__(self,s_data,t_data) -> None:
@@ -211,32 +158,6 @@ class MERGED_DATA():
         return (self.s_data[index][0],self.s_data[index][1],self.s_data[index][2],self.t_data[index][0],self.t_data[index][2])
         # ['s_input', 's_lb', 's_msk','t_input', 't_msk']
 
-
-# In[ ]:
-
-
-sampler = ds.RandomSampler()
-# all_data = MERGED_DATA(s_data,t_data)
-# t_dataset = ds.GeneratorDataset(t_data,sampler=sampler,
-#                                 column_names=['t_input', 't_nouse', 't_msk'])
-# s_dataset = ds.GeneratorDataset(s_data,sampler=sampler,
-#                                 column_names=['s_input', 's_lb', 's_msk'])
-
-dataset = ds.GeneratorDataset(MERGED_DATA(s_data,t_data),sampler=sampler,column_names=['s_input', 's_lb', 's_msk','t_input', 't_msk'])
-dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
-# In[]
-
-from mindspore.dataset import TupleIterator
-rtl = TupleIterator(dataset)
-# In[]
-# for it in rtl:
-#     for i in it:
-#         print(i.shape)
-# In[]
-
-# In[]
-
-# In[]
 
 class MultipleLoss(LossBase):
     def __init__(self, reduction='mean'):
@@ -253,35 +174,59 @@ class MultipleLoss(LossBase):
         loss2 = self.feaLoss(s_bkb, t_bkb)
         loss3 = self.outLoss(s_out, t_out)
         return loss1 + self.a*loss2 + self.b*loss3
+if __name__ == '__main__':
+    set_context(mode=context.GRAPH_MODE,device_target='GPU', device_id=0, save_graphs=True,
+                save_graphs_path="/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/RUL/ir_files",
+                save_graph_dot=True)
+    seq_len = 70
+    target= 'FD002'
+    source = 'FD003'
+    epoches = 240
+    os.chdir('/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/')
+    batch_size = 100
+    a = 0.1
+    b = 0.5
+    source_list = numpy.loadtxt("save/"+source+"/train"+source+".txt", dtype=str).tolist()
+    target_list = numpy.loadtxt("save/"+target+"/train"+target+".txt", dtype=str).tolist()
+    valid_list = numpy.loadtxt("save/"+target+"/test"+target+".txt", dtype=str).tolist()
+    # len(v) = 47
+    a_list = numpy.loadtxt("save/"+target+"/valid"+target+".txt", dtype=str).tolist()
+    # len(a_list) 31
+    target_test_names = valid_list + a_list
+    # 78 files
+    target_test_names = target_test_names[:10]
+    minl = min(len(source_list), len(target_list))
+    s_data,t_data,t_data_test = prepareData(source_list,target_list,target_test_names)
+    sampler = ds.RandomSampler()
+    dataset = ds.GeneratorDataset(MERGED_DATA(s_data,t_data),sampler=sampler,column_names=['s_input', 's_lb', 's_msk','t_input', 't_msk'])
+    dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
+    rtl = TupleIterator(dataset)
+    loss_func = MultipleLoss()
+    net = mymodel(max_len=seq_len,batch_size=batch_size)
+    # print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    print(id(net))
+    D1 = Discriminator(in_features=seq_len)
+    D2 = backboneDiscriminator(seq_len)
+    loss_net = MywithLossCell(net,D1,D2,loss_func)
+    opt = nn.SGD(net.trainable_params()+D1.trainable_params()+D2.trainable_params()
+                ,learning_rate=0.02)
+    result_eval = {"mse": []}
+    eval_cb = EvalCallBack(net, 1, result_eval)
+    summary_collector = SummaryCollector(summary_dir = './RUL/summary_dir',collect_freq=1)
+    print("before model")
 
-loss_func = MultipleLoss()
-#In[]:
-net = mymodel(max_len=seq_len,batch_size=batch_size)
-# print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-print(id(net))
-D1 = Discriminator(in_features=seq_len)
-D2 = backboneDiscriminator(seq_len)
-loss_net = MywithLossCell(net,D1,D2,loss_func)
-opt = nn.SGD(net.trainable_params()+D1.trainable_params()+D2.trainable_params()
-             ,learning_rate=0.02)
-result_eval = {"mse": []}
-eval_cb = EvalCallBack(net, 1, result_eval)
-print("before model")
+    model = Model(network=loss_net, optimizer=opt)
+    # FORMAT two dataset into one.
 
-model = Model(network=loss_net, optimizer=opt)
-# FORMAT two dataset into one.
 
-# In[ ]:
-print("start training")
-import time
-time.sleep(3)
 
-model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor(),eval_cb])
+    # model.train(epoch=100, train_dataset=dataset, callbacks=[LossMonitor(per_print_times=10),eval_cb,summary_collector])
+    model.train(epoch=100, train_dataset=dataset, callbacks=[LossMonitor(per_print_times=10),eval_cb])
+
 
 
 # 
 
-# In[ ]:
 
 
 # input_shape = self.shape(input_mask)
@@ -293,11 +238,6 @@ model.train(epoch=10, train_dataset=dataset, callbacks=[LossMonitor(),eval_cb])
 # mask_right = self.reshape(input_mask, shape_right)
 # attention_mask = self.batch_matmul(mask_left, mask_right)
 
-
-# In[9]:
-
-
-# In[ ]:
 
 
 

@@ -39,7 +39,7 @@ class ReverseGrad(nn.Cell):
         self.alpha = alpha
     
     def construct(self,x):
-        return 1.0001*x
+        return x
     
     def bprop(self,x,out,dout):
         return (-self.alpha*dout,)
