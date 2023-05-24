@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
-
 from mydataset import TRANSFORMER_DATA_MINDS,TRANSFORMER_ALL_DATA_MINDS
 from mymodel import mymodel, Discriminator, backboneDiscriminator
 from myloss import advLoss
@@ -28,7 +26,8 @@ from mindspore import set_context,context
 from mindspore.train.callback import Callback
 from mindspore import Tensor
 from mindspore.dataset import TupleIterator
-
+import pickle
+import mindspore as ms
 # set_context(mode=context.PYNATIVE_MODE,device_target="GPU")
 
 def prepareData(source_list,target_list,target_test_names):
@@ -78,7 +77,7 @@ class EvalCallBack(Callback):
         if cur_epoch % self.eval_per_epoch == 0:
             # begin eval:
             tot = 0
-            for i in target_test_names:
+            for i in tqdm(target_test_names):
                 pred_sum, pred_cnt = Tensor(np.zeros(800)), Tensor(np.zeros(800))
                 # 记录结果 （800维？）
                 valid_data = TRANSFORMER_DATA_MINDS(i, seq_len)
@@ -121,27 +120,6 @@ class EvalCallBack(Callback):
 
 # 以下cell是model的组成成分，用于在callback 中调用，定义行为
 # https://www.hiascend.com/app-forum/topic-detail/0224103731274466014
-class CustomWithEvalCell(nn.Cell):
-    """自定义多标签评估网络"""
-
-    def __init__(self, network):
-        super(CustomWithEvalCell, self).__init__(auto_prefix=False)
-        self.network = network
-        # network is mymodel, receive src as fellow:
-        '''
-        def construct(self, src, attn_msk=None):
-            src = self.pos_encoder(src)
-            # output1 = self.transformer_encoder(src, attn_msk, key_msk)
-            # problem？
-            attn_msk = self.trans_mask_generator(attn_msk)
-            output1 = self.transformer_encoder(src, attn_msk)
-            # return the multiple result..
-            output2 = self.decoder(output1[0])
-            return output1, output2
-        '''
-    def construct(self, target_test_names):
-        output = self.network(data)
-        return output, label1, label2
     
 
 
@@ -173,7 +151,29 @@ class MultipleLoss(LossBase):
         loss1 = self.mseLoss(s_r, s_lb)
         loss2 = self.feaLoss(s_bkb, t_bkb)
         loss3 = self.outLoss(s_out, t_out)
+        # print(f"loss1:{float(loss1)} ,loss2:{float(loss2)}, loss3:{float(loss3)}...")
         return loss1 + self.a*loss2 + self.b*loss3
+    
+class TrainOneStepCell(nn.Cell):
+    def __init__(self, network, optimizer, sens=1.0):
+        """参数初始化"""
+        super(TrainOneStepCell, self).__init__(auto_prefix=False)
+        self.network = network
+        # 使用tuple包装weight
+        self.weights = ParameterTuple(network.trainable_params())
+        self.optimizer = optimizer
+        # 定义梯度函数
+        self.grad = ops.GradOperation(get_by_list=True)
+
+    def construct(self, data):
+        """构建训练过程"""
+        weights = self.weights
+        loss = self.network(data[0],data[1],data[2],data[3],data[4])
+        # 为反向传播设定系数
+        grads = self.grad(self.network, weights)(data[0],data[1],data[2],data[3],data[4])
+        ops.depend(grads,loss)
+        return loss, self.optimizer(grads)
+
 if __name__ == '__main__':
     set_context(mode=context.GRAPH_MODE,device_target='GPU', device_id=0, save_graphs=True,
                 save_graphs_path="/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/RUL/ir_files",
@@ -194,24 +194,24 @@ if __name__ == '__main__':
     # len(a_list) 31
     target_test_names = valid_list + a_list
     # 78 files
-    target_test_names = target_test_names[:10]
+    # target_test_names = target_test_names[]
     minl = min(len(source_list), len(target_list))
     s_data,t_data,t_data_test = prepareData(source_list,target_list,target_test_names)
     sampler = ds.RandomSampler()
-    dataset = ds.GeneratorDataset(MERGED_DATA(s_data,t_data),sampler=sampler,column_names=['s_input', 's_lb', 's_msk','t_input', 't_msk'])
+    merged_data = MERGED_DATA(s_data,t_data)
+    dataset = ds.GeneratorDataset(merged_data,sampler=sampler,column_names=['s_input', 's_lb', 's_msk','t_input', 't_msk'])
     dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
     rtl = TupleIterator(dataset)
     loss_func = MultipleLoss()
     net = mymodel(max_len=seq_len,batch_size=batch_size)
-    # print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    print(id(net))
     D1 = Discriminator(in_features=seq_len)
     D2 = backboneDiscriminator(seq_len)
     loss_net = MywithLossCell(net,D1,D2,loss_func)
+    learning_rate = nn.piecewise_constant_lr([80,160,240],[0.05,0.25,0.125])
     opt = nn.SGD(net.trainable_params()+D1.trainable_params()+D2.trainable_params()
-                ,learning_rate=0.02)
+                ,learning_rate=learning_rate)
     result_eval = {"mse": []}
-    eval_cb = EvalCallBack(net, 1, result_eval)
+    eval_cb = EvalCallBack(net, 100, result_eval)
     summary_collector = SummaryCollector(summary_dir = './RUL/summary_dir',collect_freq=1)
     print("before model")
 
@@ -219,24 +219,22 @@ if __name__ == '__main__':
     # FORMAT two dataset into one.
 
 
-
+    loss_net.set_train(True)
     # model.train(epoch=100, train_dataset=dataset, callbacks=[LossMonitor(per_print_times=10),eval_cb,summary_collector])
-    model.train(epoch=100, train_dataset=dataset, callbacks=[LossMonitor(per_print_times=10),eval_cb])
+    model.train(epoch=1000, train_dataset=dataset, callbacks=[LossMonitor(per_print_times=10)], dataset_sink_mode=True)
+
+    # todo:每个epoch的时候进行一次数据的打乱。
+
+    train_model = TrainOneStepCell(loss_net,opt)
+    # 重构训练循环：https://gitee.com/mindspore/docs/blob/r2.0.0-alpha/tutorials/application/source_zh_cn/cv/resnet50.ipynb
+    # 参考2：https://www.mindspore.cn/tutorial/zh-CN/r1.2/intermediate/custom/train.html
+    # for j in range(10):
+    #     for i,d in tqdm(enumerate(rtl)):
+    #         print(train_model(d)[0])
+        
 
 
 
-# 
-
-
-
-# input_shape = self.shape(input_mask)
-# shape_right = (input_shape[0], 1, input_shape[1])
-# shape_left = input_shape + (1,)
-
-# input_mask = self.cast(input_mask, ms.float32)
-# mask_left = self.reshape(input_mask, shape_left)
-# mask_right = self.reshape(input_mask, shape_right)
-# attention_mask = self.batch_matmul(mask_left, mask_right)
 
 
 

@@ -12,7 +12,7 @@ import time
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-
+import os
 # def my own train
 
 def validate():
@@ -35,7 +35,6 @@ def validate():
             _, out = net(input, msk)
             # 输出结果，out 就是decoder的输出
             out = out.squeeze(2).cpu()
-            # TODO:形状是啥？
             for j in range(data_len):
                 if j < seq_len-1:
                     pred_sum[:j+1] += out[j, -(j+1):]
@@ -57,7 +56,7 @@ def validate():
 
 def train():
     minn = 999
-    for e in tqdm(range(epochs)):
+    for e in range(epochs):
         al, tot = 0, 0
         net.train()
         random.shuffle(source_list)
@@ -113,6 +112,10 @@ def train():
         rmse = validate()
         if args.type == 2:
             print("{}/{}| loss1={:.5f}, fea_loss={:.5f}, out_loss={:.5f}, rmse={:.5f}".\
+                format(e, args.epoch, loss1_sum/cnt, bkb_sum/cnt, out_sum/cnt, rmse))
+            
+            with open("/Domain-Adaptive-Remaining-Useful-Life-Prediction-with-Transformer/result.txt",'a') as f:
+                f.write("{}/{}| loss1={:.5f}, fea_loss={:.5f}, out_loss={:.5f}, rmse={:.5f}\n".\
                 format(e, args.epoch, loss1_sum/cnt, bkb_sum/cnt, out_sum/cnt, rmse))
         else:    
             print("{}/{}| 1={:.5f}, 2={:.5f}, rmse={:.5f}".format(e, args.epoch, loss1, loss2_sum/cnt, rmse))

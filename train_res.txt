@@ -1,0 +1,26 @@
+source=FD003, target=FD002, a=0.1, b=0.5, epochs=240, type=backbone + output, lr=0.02, using scheduler
+0/240| loss1=0.13476, fea_loss=0.00000, out_loss=0.00000, rmse=68.33919
+min=68.33918647842363
+1/240| loss1=0.10884, fea_loss=0.00000, out_loss=0.00000, rmse=64.64961
+min=64.64961376056415
+2/240| loss1=0.08494, fea_loss=0.00000, out_loss=0.00000, rmse=78.91755
+3/240| loss1=0.06581, fea_loss=0.00000, out_loss=0.00000, rmse=71.51242
+4/240| loss1=0.05665, fea_loss=0.00000, out_loss=0.00000, rmse=61.39446
+min=61.39446464888035
+5/240| loss1=0.05148, fea_loss=0.70456, out_loss=0.69757, rmse=70.07542
+6/240| loss1=0.04777, fea_loss=0.70167, out_loss=0.69239, rmse=76.24140
+7/240| loss1=0.04523, fea_loss=0.70018, out_loss=0.68954, rmse=67.05181
+8/240| loss1=0.04323, fea_loss=0.69916, out_loss=0.68731, rmse=75.65917
+9/240| loss1=0.04151, fea_loss=0.69800, out_loss=0.68557, rmse=72.80532
+10/240| loss1=0.04030, fea_loss=0.69800, out_loss=0.68435, rmse=77.96237
+11/240| loss1=0.03933, fea_loss=0.69738, out_loss=0.68372, rmse=79.33809
+12/240| loss1=0.03854, fea_loss=0.69708, out_loss=0.68198, rmse=71.33299
+13/240| loss1=0.03752, fea_loss=0.69664, out_loss=0.68058, rmse=65.45873
+14/240| loss1=0.03651, fea_loss=0.69668, out_loss=0.67994, rmse=62.51162
+15/240| loss1=0.03592, fea_loss=0.69619, out_loss=0.67957, rmse=61.01119
+min=61.011186700078085
+16/240| loss1=0.03530, fea_loss=0.69615, out_loss=0.68128, rmse=42.10686
+min=42.1068567496093
+17/240| loss1=0.03495, fea_loss=0.69585, out_loss=0.68580, rmse=32.41357
+min=32.41356834173062
+18/240| loss1=0.03435, fea_loss=0.69593, out_loss=0.69228, rmse=33.55143

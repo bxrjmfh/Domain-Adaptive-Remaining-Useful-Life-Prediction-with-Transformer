@@ -16,7 +16,7 @@ class TRANSFORMER_ALL_DATA_MINDS():
         data_list = [i for i in lis if i in name]
         self.data, self.label, self.padding = [], [], []
         
-        for n in tqdm(name):
+        for n in tqdm(data_list):
             raw = numpy.loadtxt(data_root+n,dtype='float32')[:,2:]
             # jump id and time cycle
             lbl = numpy.loadtxt(label_root+n,dtype='float32')/Rc
@@ -41,7 +41,7 @@ class TRANSFORMER_ALL_DATA_MINDS():
             self.padding += [ops.zeros(seq_len,mstype.float32) for i in range(seq_len-1, l)]
             self.padding += [ops.concat([ops.zeros(seq_len-i-1,mstype.float32), ops.ones(i+1,type=mstype.float32)],0) for i in range(seq_len-1)]
             # todo:debug
-            if len(self.data) > 300:
+            if len(self.data) > 1000:
                 break
 
     def __len__(self):

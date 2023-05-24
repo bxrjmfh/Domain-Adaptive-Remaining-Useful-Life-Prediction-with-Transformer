@@ -39,14 +39,14 @@ class ReverseGrad(nn.Cell):
         self.alpha = alpha
     
     def construct(self,x):
-        return x
+        return 1.000000001*x
     
     def bprop(self,x,out,dout):
         return (-self.alpha*dout,)
     
 class Discriminator(nn.Cell): #D_y
-    def __init__(self, auto_prefix=True, flags=None, in_features=24):
-        super(Discriminator,self).__init__(auto_prefix, flags)
+    def __init__(self, in_features=24):
+        super(Discriminator,self).__init__()
         self.in_features = in_features
         self.rev = ReverseGrad(1.0)
             # reverse layer
